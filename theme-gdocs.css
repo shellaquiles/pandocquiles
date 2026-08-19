@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+    color: #333333;
+    line-height: 1.6;
+    padding: 20px 40px;
+    font-size: 14px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #9D2449;
+    font-weight: bold;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    font-size: 2.25em;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+h2 {
+    font-size: 1.75em;
+}
+
+h3 {
+    font-size: 1.5em;
+}
+
+/* Tablas sencillas */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    border: 1px solid #cbd5e1;
+    padding: 12px 15px;
+    text-align: left;
+}
+
+th {
+    background-color: #FDF4F6;
+    color: #9D2449;
+    font-weight: bold;
+    text-align: left;
+    border-bottom: 2px solid #9D2449;
+}
+
+/* Blockquotes (Alertas) - Sin bordes ni fondos para no romper GDocs */
+blockquote {
+    color: #5A122A;
+    font-style: italic;
+    font-weight: bold;
+    margin: 1em 40px;
+}
+
+/* Código en línea y bloques de código */
+code, pre {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9em;
+    color: #475569;
+}
+
+a {
+    color: #9D2449;
+    text-decoration: none;
+}
+
+/* Fixes Imágenes y Mermaid */
+img, .mermaid svg, pre.mermaid svg, div.mermaid svg {
+    max-width: 100% !important;
+    max-height: 220mm !important;
+    height: auto !important;
+    page-break-inside: avoid;
+    margin: 20px auto;
+    display: block;
+    object-fit: contain;
+}
