@@ -1,0 +1,14 @@
+# Archivos de Entorno
+.env
+
+# MacOS
+.DS_Store
+
+# Archivos temporales generados por scripts
+*.pyc
+__pycache__/
+TEMP_*
+
+# Salidas de compilación
+documentacion/
+manuales/

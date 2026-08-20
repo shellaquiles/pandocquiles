@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# ==============================================================================
+# PanDocquiles - Orquestador de Compilación
+# Script principal que coordina la generación de PDFs y HTMLs a partir de MD.
+# ==============================================================================
+
+set -e
+
+# Asegurar que se ejecuta en la raíz del proyecto
+cd "$(dirname "$0")/.."
+
+# Cargar variables de entorno si existe .env
+if [ -f ".env" ]; then
+  export $(cat ".env" | grep -v '^#' | xargs)
+fi
+
+# Variables de configuración por defecto
+DEFAULT_INPUT_DIRS="${INPUT_DIRS:-docs}"
+OUTPUT_DIR="${OUTPUT_DIR:-documentacion}"
+CSS_PDF_THEME="${CSS_PDF_THEME:-config/css/theme-pdf.css}"
+CSS_GDOCS_THEME="${CSS_GDOCS_THEME:-config/css/theme-gdocs.css}"
+
+# Determinar directorios a procesar (argumentos CLI o configuración)
+TARGET_DIRS=("$@")
+if [ ${#TARGET_DIRS[@]} -eq 0 ]; then
+    read -r -a TARGET_DIRS <<< "$DEFAULT_INPUT_DIRS"
+fi
+
+# Crear directorio de salida si no existe
+mkdir -p "$OUTPUT_DIR/"
+
+for DIR in "${TARGET_DIRS[@]}"; do
+    # Remover barra al final si la tiene
+    DIR="${DIR%/}"
+    
+    if [ ! -d "$DIR" ]; then
+        echo "⚠️ El directorio '$DIR' no existe. Omitiendo..."
+        continue
+    fi
+
+    # Validar que existan capítulos en el directorio
+    if ls "$DIR"/[0-9]*.md 1> /dev/null 2>&1 || [ -f "$DIR/README.md" ]; then
+        DOC_NAME="$(basename "$DIR")"
+        if [ "$DOC_NAME" = "docs" ]; then
+            DOC_NAME="pandocquiles"
+        fi
+        
+        echo "============================================================"
+        echo "📘 Construyendo: $DOC_NAME ($DIR)"
+        echo "============================================================"
+        
+        # 1. Unir capítulos, generar portada y configuración de PDF (Python)
+        echo "🧩 Ensamblando capítulos de Markdown..."
+        python3 src/python/compiler.py "$DIR" "$DOC_NAME" "$OUTPUT_DIR"
+        
+        # 2. Renderizar Mermaid a PNG (Google Docs no acepta SVG)
+        echo "🎨 Renderizando diagramas Mermaid..."
+        npx -y @mermaid-js/mermaid-cli -i "$OUTPUT_DIR/$DOC_NAME.md" -o "$OUTPUT_DIR/TEMP_MERMAID.md" -e png -s 2 -b white
+        
+        # 3. Preparar archivo PDF inyectando CSS embebido para arreglar imágenes
+        echo "🛠️ Inyectando CSS base de PDF..."
+        echo '<style>' > "$OUTPUT_DIR/TEMP_PDF.md"
+        echo 'img, .mermaid svg, pre.mermaid svg, div.mermaid svg { max-width: 100% !important; height: auto !important; page-break-inside: avoid; margin: 20px auto; display: block; }' >> "$OUTPUT_DIR/TEMP_PDF.md"
+        echo 'table { page-break-inside: avoid; }' >> "$OUTPUT_DIR/TEMP_PDF.md"
+        echo '</style>' >> "$OUTPUT_DIR/TEMP_PDF.md"
+        cat "$OUTPUT_DIR/TEMP_MERMAID.md" >> "$OUTPUT_DIR/TEMP_PDF.md"
+        
+        # 4. Construir HTML (para Google Docs) con imágenes incrustadas en Base64
+        echo "🌐 Construyendo HTML con recursos embebidos..."
+        pandoc "$OUTPUT_DIR/TEMP_MERMAID.md" -o "$OUTPUT_DIR/$DOC_NAME.html" \
+            --self-contained \
+            --css="$CSS_GDOCS_THEME" \
+            --resource-path="$DIR:.:$OUTPUT_DIR"
+        
+        # Formatear el HTML generado para que las imágenes respeten anchos (Python)
+        echo "🪄 Aplicando correcciones visuales al HTML..."
+        python3 src/python/html_formatter.py "$OUTPUT_DIR/$DOC_NAME.html"
+
+        # 5. Construir documento Microsoft Word (.docx) a partir del HTML formateado
+        echo "📝 Compilando documento Word ($DOC_NAME.docx)..."
+        REF_DOC_OPTION=""
+        if [ -f "config/templates/referencia.docx" ]; then
+            REF_DOC_OPTION="--reference-doc=config/templates/referencia.docx"
+        elif [ -f "config/templates/referencia_modificada.docx" ]; then
+            REF_DOC_OPTION="--reference-doc=config/templates/referencia_modificada.docx"
+        fi
+
+        pandoc "$OUTPUT_DIR/$DOC_NAME.html" -o "$OUTPUT_DIR/$DOC_NAME.docx" \
+            $REF_DOC_OPTION
+
+        # 5. Construir PDF usando theme-pdf.css
+        echo "📄 Compilando PDF final ($DOC_NAME.pdf)..."
+        npx -y md-to-pdf "$OUTPUT_DIR/TEMP_PDF.md" \
+            --stylesheet "$CSS_PDF_THEME" \
+            --config-file "$OUTPUT_DIR/pdf_config.json"
+        
+        # Reescribir metadatos del PDF si se generó el título exitosamente
+        if [ -f "$OUTPUT_DIR/title.txt" ]; then
+            MAIN_TITLE=$(cat "$OUTPUT_DIR/title.txt")
+            echo "📝 Escribiendo metadatos PDF oficiales..."
+            exiftool -Title="$MAIN_TITLE" \
+                     -Author="${PDF_AUTHOR:-Organización}" \
+                     -Creator="${PDF_CREATOR:-Organización}" \
+                     -Producer="${PDF_PRODUCER:-Generador de PDF}" \
+                     -overwrite_original "$OUTPUT_DIR/TEMP_PDF.pdf"
+            rm "$OUTPUT_DIR/title.txt"
+        fi
+        
+        # 6. Mover y limpiar dentro de OUTPUT_DIR
+        mv "$OUTPUT_DIR/TEMP_PDF.pdf" "$OUTPUT_DIR/$DOC_NAME.pdf"
+        rm "$OUTPUT_DIR/TEMP_MERMAID.md" "$OUTPUT_DIR/TEMP_PDF.md" 2>/dev/null || true
+        rm "$OUTPUT_DIR"/TEMP_MERMAID-*.png 2>/dev/null || true
+        rm "$OUTPUT_DIR/pdf_config.json" 2>/dev/null || true
+        rm "$OUTPUT_DIR/$DOC_NAME.md" 2>/dev/null || true
+        
+        echo "✅ Completado: $OUTPUT_DIR/$DOC_NAME.html, $OUTPUT_DIR/$DOC_NAME.docx y $OUTPUT_DIR/$DOC_NAME.pdf"
+    else
+        echo "⚠️ No se encontraron archivos Markdown (.md) en '$DIR'. Omitiendo..."
+    fi
+done
+
+echo "☁️ Sincronizando resultados con Google Drive..."
+python3 src/python/uploader.py
+
+echo "🎉 ¡Compilaciones finalizadas y subidas con éxito!"
