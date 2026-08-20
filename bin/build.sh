@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ==============================================================================
-# PanDocquiles - Orquestador de Compilación
-# Script principal que coordina la generación de PDFs y HTMLs a partir de MD.
+# PanDocquiles v1.0.0 - Orquestador de Compilación
+# Script principal que coordina la generación de PDFs, HTMLs y DOCX a partir de MD.
 # ==============================================================================
 
 set -e
