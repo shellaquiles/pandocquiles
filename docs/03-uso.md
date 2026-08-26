@@ -20,8 +20,8 @@ mi-proyecto/
 ```
 
 ### Reglas de Nomenclatura Interna:
-- **`README.md`**: Si existe un título `# Título — Subtítulo` en la primera línea del `README.md`, el compilador lo extrae automáticamente para construir la portada oficial.
-- **Capítulos (`01-*.md`, `02-*.md`, `10-*.md`, etc.)**: Se leen y concatenan secuencialmente en orden numérico natural.
+- **`README.md`**: Si existe un título `# Título — Subtítulo` o bloque Frontmatter YAML (`title: ...`), el compilador lo extrae automáticamente para construir la portada oficial y sanitiza el texto para evitar impresiones redundantes.
+- **Capítulos (`01-*.md`, `02-*.md`, `10-*.md`, etc.)**: Se leen y concatenan secuencialmente en orden numérico natural. Cada capítulo con encabezado `# H1` inicia automáticamente en una nueva página sin dejar hojas vacías.
 
 ---
 
@@ -44,6 +44,17 @@ Las llamadas de atención se traducen automáticamente en bloques destacados con
 
 > [!TIP]
 > Consejos de optimización y mejores prácticas.
+```
+
+### 📄 Control de Saltos de Página Manuales
+Si necesitas forzar un salto de página intencional en medio de un capítulo o sección:
+
+```html
+<div class="page-break"></div>
+```
+O también:
+```html
+<div class="salto-pagina"></div>
 ```
 
 ### 📊 Diagramas de Flujo y Arquitectura (Mermaid)
@@ -74,4 +85,5 @@ Puedes pasar como argumentos uno o múltiples directorios de origen:
 ```
 
 ### 📁 Ubicación de los Resultados
-Todos los archivos `.pdf` y `.html` generados se depositan automáticamente en el directorio de salida (por defecto `documentacion/`) y, si está configurado el webhook, se sincronizan con Google Drive.
+Todos los archivos `.pdf`, `.docx` y `.html` generados se depositan automáticamente en el directorio de salida (por defecto `documentacion/`) y, si está configurado el webhook, se sincronizan con Google Drive.
+
