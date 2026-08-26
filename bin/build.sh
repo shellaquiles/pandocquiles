@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# PanDocquiles v1.0.0 - Orquestador de Compilación
+# PanDocquiles v1.1.0 - Orquestador de Compilación
 # Script principal que coordina la generación de PDFs, HTMLs y DOCX a partir de MD.
 # ==============================================================================
 
@@ -58,13 +58,8 @@ for DIR in "${TARGET_DIRS[@]}"; do
         echo "🎨 Renderizando diagramas Mermaid..."
         npx -y @mermaid-js/mermaid-cli -i "$OUTPUT_DIR/$DOC_NAME.md" -o "$OUTPUT_DIR/TEMP_MERMAID.md" -e png -s 2 -b white
         
-        # 3. Preparar archivo PDF inyectando CSS embebido para arreglar imágenes
-        echo "🛠️ Inyectando CSS base de PDF..."
-        echo '<style>' > "$OUTPUT_DIR/TEMP_PDF.md"
-        echo 'img, .mermaid svg, pre.mermaid svg, div.mermaid svg { max-width: 100% !important; height: auto !important; page-break-inside: avoid; margin: 20px auto; display: block; }' >> "$OUTPUT_DIR/TEMP_PDF.md"
-        echo 'table { page-break-inside: avoid; }' >> "$OUTPUT_DIR/TEMP_PDF.md"
-        echo '</style>' >> "$OUTPUT_DIR/TEMP_PDF.md"
-        cat "$OUTPUT_DIR/TEMP_MERMAID.md" >> "$OUTPUT_DIR/TEMP_PDF.md"
+        # 3. Preparar archivo PDF
+        cp "$OUTPUT_DIR/TEMP_MERMAID.md" "$OUTPUT_DIR/TEMP_PDF.md"
         
         # 4. Construir HTML (para Google Docs) con imágenes incrustadas en Base64
         echo "🌐 Construyendo HTML con recursos embebidos..."
@@ -89,7 +84,7 @@ for DIR in "${TARGET_DIRS[@]}"; do
         pandoc "$OUTPUT_DIR/$DOC_NAME.html" -o "$OUTPUT_DIR/$DOC_NAME.docx" \
             $REF_DOC_OPTION
 
-        # 5. Construir PDF usando theme-pdf.css
+        # 6. Construir PDF usando theme-pdf.css
         echo "📄 Compilando PDF final ($DOC_NAME.pdf)..."
         npx -y md-to-pdf "$OUTPUT_DIR/TEMP_PDF.md" \
             --stylesheet "$CSS_PDF_THEME" \
@@ -107,10 +102,11 @@ for DIR in "${TARGET_DIRS[@]}"; do
             rm "$OUTPUT_DIR/title.txt"
         fi
         
-        # 6. Mover y limpiar dentro de OUTPUT_DIR
+        # 7. Mover y limpiar dentro de OUTPUT_DIR
         mv "$OUTPUT_DIR/TEMP_PDF.pdf" "$OUTPUT_DIR/$DOC_NAME.pdf"
         rm "$OUTPUT_DIR/TEMP_MERMAID.md" "$OUTPUT_DIR/TEMP_PDF.md" 2>/dev/null || true
         rm "$OUTPUT_DIR"/TEMP_MERMAID-*.png 2>/dev/null || true
+        rm TEMP_MERMAID-*.png 2>/dev/null || true
         rm "$OUTPUT_DIR/pdf_config.json" 2>/dev/null || true
         rm "$OUTPUT_DIR/$DOC_NAME.md" 2>/dev/null || true
         
@@ -124,3 +120,4 @@ echo "☁️ Sincronizando resultados con Google Drive..."
 python3 src/python/uploader.py
 
 echo "🎉 ¡Compilaciones finalizadas y subidas con éxito!"
+

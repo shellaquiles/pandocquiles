@@ -10,6 +10,18 @@ import datetime
 import os
 import json
 import sys
+import unicodedata
+
+def slugify(text: str) -> str:
+    """
+    Convierte texto con caracteres especiales y acentos en un slug URL-safe compatible
+    con las anclas generadas en los encabezados.
+    """
+    clean = re.sub(r'[`*\[\]:?.,/\\()\'"]', '', text)
+    normalized = unicodedata.normalize('NFKD', clean).encode('ASCII', 'ignore').decode('utf-8')
+    normalized = normalized.lower()
+    slug = re.sub(r'[^a-z0-9]+', '-', normalized).strip('-')
+    return slug
 
 def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
     """
@@ -23,7 +35,7 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
     """
     os.makedirs(output_dir, exist_ok=True)
     
-    # Buscar README y los demás capítulos (0*.md)
+    # Buscar README y los demás capítulos (0*.md, 1*.md, etc.)
     files = []
     readme_path = os.path.join(dir_path, 'README.md')
     if os.path.exists(readme_path):
@@ -38,24 +50,33 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
 
     out_file = os.path.join(output_dir, f'{doc_name}.md')
 
-    with open(out_file, 'w') as out:
+    with open(out_file, 'w', encoding='utf-8') as out:
         # --- Generar Portada ---
         main_title = doc_name.replace('-', ' ').title()
         subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
         
-        # Intentar extraer el título real del README
+        # Intentar extraer el título real del README o frontmatter si existe
         if files and 'README.md' in files[0]:
-            with open(files[0], 'r') as readme:
-                first_line = readme.readline().strip()
-                if first_line.startswith('# '):
-                    raw_title = first_line[2:]
-                    if ' — ' in raw_title:
-                        main_title, subtitle = raw_title.split(' — ', 1)
-                    elif ' - ' in raw_title:
-                        main_title, subtitle = raw_title.split(' - ', 1)
-                    else:
-                        main_title = raw_title
-                        subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
+            with open(files[0], 'r', encoding='utf-8') as readme:
+                content_first = readme.read()
+                # Extraer título de YAML frontmatter si existe
+                m_title = re.search(r'^title:\s*\"([^\"]+)\"', content_first, re.MULTILINE)
+                m_sub = re.search(r'^subtitle:\s*\"([^\"]+)\"', content_first, re.MULTILINE)
+                if m_title:
+                    main_title = m_title.group(1).strip()
+                    if m_sub:
+                        subtitle = m_sub.group(1).strip()
+                else:
+                    lines = content_first.split('\n')
+                    if lines and lines[0].startswith('# '):
+                        raw_title = lines[0][2:].strip()
+                        if ' — ' in raw_title:
+                            main_title, subtitle = raw_title.split(' — ', 1)
+                        elif ' - ' in raw_title:
+                            main_title, subtitle = raw_title.split(' - ', 1)
+                        else:
+                            main_title = raw_title
+                            subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
 
         meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
         fecha = f'{meses[datetime.datetime.now().month - 1]} {datetime.datetime.now().year}'
@@ -69,8 +90,6 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
   <div style="width: 80px; height: 4px; background-color: #9D2449; margin: 30px auto;"></div>
   <p style="font-size: 13px; color: #888888;">Generado automáticamente · {fecha}</p>
 </div>
-
-<div style="page-break-after: always;"></div>
 
 '''
         out.write(portada)
@@ -86,28 +105,38 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
             }
         }
         
-        with open(os.path.join(output_dir, 'pdf_config.json'), 'w') as f_conf:
+        with open(os.path.join(output_dir, 'pdf_config.json'), 'w', encoding='utf-8') as f_conf:
             json.dump(pdf_opts, f_conf)
             
-        with open(os.path.join(output_dir, 'title.txt'), 'w') as f_title:
+        with open(os.path.join(output_dir, 'title.txt'), 'w', encoding='utf-8') as f_title:
             f_title.write(main_title)
 
         for file in files:
-            with open(file, 'r') as infile:
+            with open(file, 'r', encoding='utf-8') as infile:
                 content = infile.read()
+                
+                # Sanitizar YAML frontmatter inicial si existe en archivos o capítulos
+                content = re.sub(r'^---\s*\n.*?\n---\s*\n?', '', content, flags=re.DOTALL)
+
                 # Si es el README, quitar el H1 principal porque ya lo pusimos en la portada
                 if 'README.md' in file:
                     content = re.sub(r'^# .*\n', '', content)
 
+                # Sustituir callouts estilo GitHub
                 content = re.sub(r'\[!NOTE\]', '**NOTA:**', content)
                 content = re.sub(r'\[!IMPORTANT\]', '**IMPORTANTE:**', content)
                 content = re.sub(r'\[!WARNING\]', '**ADVERTENCIA:**', content)
                 content = re.sub(r'\[!CAUTION\]', '**PRECAUCIÓN:**', content)
                 content = re.sub(r'\[!TIP\]', '**CONSEJO:**', content)
                 
-                # Arreglar links internos entre capítulos
-                content = re.sub(r'\]\(\./[0-9]+-[^#)]+\.md#([^)]+)\)', r'](#\1)', content)
-                content = re.sub(r'\]\(\./[0-9]+-[^#)]+\.md\)', r'](#)', content)
+                # Arreglar links internos entre capítulos con slugificación de fragmento
+                content = re.sub(
+                    r'\[([^\]]+)\]\(\.\/[0-9]+-[^#)]+\.md#([^)]+)\)',
+                    lambda m: f'[{m.group(1)}](#{slugify(m.group(2))})',
+                    content
+                )
+                content = re.sub(r'\[([^\]]+)\]\(\.\/[0-9]+-[^#)]+\.md\)', r'\1', content)
+                content = re.sub(r'\[([^\]]+)\]\(README\.md\)', r'\1', content)
                 
                 # Arreglar rutas de imágenes (ej. ./assets/... -> ../$DIR/assets/...)
                 content = re.sub(r'\]\(\./assets/', f'](../{dir_path}/assets/', content)
@@ -119,11 +148,12 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
                 content = re.sub(r'\]\((?:\./)?(?!http|#|/|\.\.)([^)]+\.(?:png|jpg|jpeg|gif|svg|webp))\)', rf'](../{dir_path}/\1)', content)
                 content = re.sub(r'src="(?:\./)?(?!http|/|\.\.)([^"]+\.(?:png|jpg|jpeg|gif|svg|webp))"', rf'src="../{dir_path}/\1"', content)
                 
-                out.write(content)
-                out.write('\n\n<div style="page-break-after: always;"></div>\n\n')
+                out.write(content.strip())
+                out.write('\n\n')
                 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
         print("Uso: python compiler.py <dir_path> <doc_name> <output_dir>")
         sys.exit(1)
     compile_markdown(sys.argv[1], sys.argv[2], sys.argv[3])
+

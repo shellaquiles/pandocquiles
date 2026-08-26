@@ -4,137 +4,265 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     color: #334155;
     line-height: 1.6;
-    padding: 20px 40px;
-    font-size: 14px;
+    padding: 0;
+    font-size: 13px;
 }
 
+/* Encabezados y control de saltos */
 h1, h2, h3, h4, h5, h6 {
     color: #0f172a;
     font-weight: 700;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
+    margin-top: 14px !important;
+    margin-bottom: 6px !important;
     border-bottom: none;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
 }
 
+p {
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
+    line-height: 1.5;
+}
+
+/* Líneas divisorias horizontales compactas */
+hr {
+    border: none !important;
+    border-top: 1px solid #e2e8f0 !important;
+    margin: 10px 0 8px 0 !important;
+    height: 1px !important;
+}
+
+hr + h2, hr + h3, hr + h4, hr + a + h2, hr + a + h3 {
+    margin-top: 6px !important;
+}
+
+/* Título de Capítulo o Índice General siempre inicia en nueva página de forma limpia */
 h1 {
-    font-size: 2.25em;
+    font-size: 1.45em !important;
     color: #9D2449;
     border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 10px;
+    padding-bottom: 6px;
+    margin-top: 0 !important;
+    margin-bottom: 12px !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+/* Saltos de página manuales explícitos */
+.page-break, .salto-pagina, div[style*="page-break"] {
+    page-break-before: always !important;
+    break-before: page !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    display: block !important;
+}
+
+/* El H1 dentro de la portada NO salta de página */
+div[style*="text-align: center"] h1, div:first-child h1 {
+    font-size: 2.1em !important;
+    page-break-before: auto !important;
+    break-before: auto !important;
+    margin-top: 15px !important;
+    line-height: 1.2;
+}
+
+/* Evitar que el primer párrafo o imagen tras un título se separe del encabezado */
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p,
+h1 + div, h2 + div, h3 + div, h4 + div,
+h1 + ol, h2 + ol, h3 + ol, h4 + ol,
+h1 + ul, h2 + ul, h3 + ul, h4 + ul {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
 }
 
 h2 {
-    font-size: 1.75em;
+    font-size: 1.22em !important;
     color: #9D2449;
+    margin-top: 14px !important;
+    margin-bottom: 6px !important;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
 }
 
 h3 {
-    font-size: 1.25em;
+    font-size: 1.08em !important;
     color: #9D2449;
+    margin-top: 12px !important;
+    margin-bottom: 4px !important;
+    line-height: 1.25;
+}
+
+h1 code, h2 code, h3 code, h4 code {
+    font-size: 0.88em !important;
+    padding: 1px 4px !important;
+    vertical-align: baseline;
 }
 
 /* Tablas Premium */
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 13px;
-    page-break-inside: avoid;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    margin: 20px 0 !important;
+    font-size: 11px !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    page-break-inside: auto !important;
+}
+
+tr {
+    page-break-inside: avoid !important;
 }
 
 th, td {
-    border: 1px solid #cbd5e1;
-    padding: 12px 15px;
-    text-align: left;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 10px !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    hyphens: auto !important;
 }
 
 th {
-    background-color: #FDF4F6;
-    color: #9D2449;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.05em;
+    background-color: #FDF4F6 !important;
+    color: #9D2449 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 10.5px !important;
+    letter-spacing: 0.03em !important;
 }
 
 tr:nth-child(even) {
-    background-color: #fafafa;
+    background-color: #fafafa !important;
 }
 
-/* Listas Numeradas Estilo CDMX */
+/* Listas Numeradas Estilo CDMX Compactas */
 ol {
-    list-style: none;
+    list-style: none !important;
     counter-reset: cdmx-counter;
-    padding-left: 0;
-    margin-top: 20px;
+    padding-left: 0 !important;
+    margin: 8px 0 12px 0 !important;
 }
 
 ol > li {
     counter-increment: cdmx-counter;
     position: relative;
-    padding-left: 50px;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #e2e8f0;
+    padding-left: 28px !important;
+    padding-bottom: 3px !important;
+    margin-bottom: 5px !important;
+    border-bottom: none !important;
+    line-height: 1.4 !important;
+    min-height: 20px;
 }
 
 ol > li:last-child {
-    border-bottom: none;
+    margin-bottom: 8px !important;
 }
 
 ol > li::before {
     content: counter(cdmx-counter, decimal-leading-zero);
     position: absolute;
     left: 0;
-    top: 2px;
+    top: 0;
     background-color: #9D2449;
     color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    font-size: 10px;
     font-weight: bold;
     text-align: center;
-    line-height: 32px;
+    line-height: 20px;
+    display: inline-block;
+}
+
+/* Listas con viñetas */
+ul {
+    margin: 6px 0 10px 0 !important;
+    padding-left: 20px !important;
+}
+
+ul > li {
+    margin-bottom: 4px !important;
+    line-height: 1.4 !important;
 }
 
 /* Alertas y Blockquotes */
 blockquote {
     border-left: 4px solid #9D2449;
     background-color: #FDF4F6;
-    padding: 15px 20px;
-    margin: 20px 0;
+    padding: 8px 14px !important;
+    margin: 8px 0 !important;
     color: #5A122A;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 6px 6px 0;
 }
 
-/* Código */
+/* Código limpio y compacto */
 pre {
-    background-color: #f8fafc;
-    color: #334155;
-    padding: 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    overflow-x: auto;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+    padding: 8px 12px !important;
+    margin: 8px 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    overflow-x: auto !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+pre code, code.hljs, .hljs, pre code[class*="language-"], pre[class*="language-"] code {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    display: inline !important;
 }
 
 code {
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #f1f5f9;
-    padding: 2px 4px;
-    border-radius: 4px;
-    color: #b91c1c;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
+    background-color: #f1f5f9 !important;
+    padding: 1.5px 4px !important;
+    border-radius: 3px !important;
+    color: #9D2449 !important;
+    font-size: 0.9em !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-all !important;
 }
 
-pre code {
-    background-color: transparent;
-    color: inherit;
-    padding: 0;
+td code, th code {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-all !important;
+    font-size: 10px !important;
 }
 
 /* Links */
@@ -144,12 +272,37 @@ a {
 }
 
 /* Fixes Imágenes y Mermaid */
-img, .mermaid svg, pre.mermaid svg, div.mermaid svg {
-    max-width: 100% !important;
-    max-height: 220mm !important;
+img {
+    max-width: 75% !important;
+    max-height: 105mm !important;
+    width: auto !important;
     height: auto !important;
-    page-break-inside: avoid;
-    margin: 20px auto;
-    display: block;
+    margin: 12px auto !important;
+    display: block !important;
+    border-radius: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    object-fit: contain;
+}
+
+p:has(img) {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    margin-top: 6px !important;
+    margin-bottom: 12px !important;
+}
+
+.mermaid svg, pre.mermaid svg, div.mermaid svg {
+    max-width: 85% !important;
+    max-height: 120mm !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin: 14px auto !important;
+    display: block !important;
     object-fit: contain;
 }

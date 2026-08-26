@@ -39,10 +39,11 @@ La identidad gráfica de tus documentos se controla mediante dos archivos CSS si
 
 ### 📄 `config/css/theme-pdf.css` (Para PDFs impresos)
 Utilizado por el motor `md-to-pdf` (Puppeteer/Chromium). Te permite personalizar:
-- **Tipografías**: Fuentes del sistema o Google Fonts importadas (ej. Inter, Roboto).
-- **Colores e Identidad**: Colores de acento para títulos, enlaces, bordes y bloques de código.
-- **Saltos de página**: Reglas `@media print` y control de orfana/viuda.
-- **Tablas y Bloques**: Sombras, bordes redondeados y padding de bloques de código.
+- **Tipografías y Escala**: Fuentes del sistema o Google Fonts importadas (ej. Inter), con proporciones compactas que evitan cortes de línea en títulos largos.
+- **Paginación Semántica**: Saltos automáticos limpios por `h1` y soporte para clases manuales como `.page-break` o `.salto-pagina`.
+- **Protección Anti-Huérfanos**: Reglas de cohesión vertical (`break-after: avoid`, `p:has(img)` protegido).
+- **Tablas Responsivas**: `table-layout: fixed` con quiebre automático de palabras en celdas con código.
+- **Bloques de Código**: Presentación limpia, monoespaciada y sin dobles marcos interiores.
 
 ### 🌐 `config/css/theme-gdocs.css` (Para HTML y Google Docs)
 Utilizado por Pandoc para construir el archivo `.html` incrustado. Está optimizado para:
@@ -64,8 +65,9 @@ Pandoc permite utilizar la bandera `--reference-doc=config/templates/referencia.
 Para habilitar la sincronización automática a Google Drive:
 
 1. Ingresa a [Google Apps Script](https://script.google.com/) con tu cuenta de Google.
-2. Crea un nuevo proyecto y reemplaza el contenido por el código de [`src/webhooks/drive_webhook.js`](file:///home/kubrick/www/docs-to-pdf-tools/src/webhooks/drive_webhook.js).
+2. Crea un nuevo proyecto y reemplaza el contenido por el código de [`src/webhooks/drive_webhook.js`](file:///home/kubrick/www/pandocquiles/src/webhooks/drive_webhook.js).
 3. Modifica la constante `FOLDER_ID` con el ID de la carpeta de Google Drive donde deseas almacenar los archivos.
 4. **Habilita el Servicio de Drive**: En la barra lateral izquierda, da clic en **Servicios (+)** y agrega la **Drive API (v2)**.
 5. Selecciona **Implementar > Nueva implementación**, elige tipo **Aplicación web**, configura "Ejecutar como: Yo" y "Quién tiene acceso: Cualquier persona".
 6. Copia la URL de la implementación resultante y asígnala a `DRIVE_WEBHOOK_URL` en tu `.env`.
+
