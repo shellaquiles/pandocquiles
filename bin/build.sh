@@ -21,8 +21,31 @@ OUTPUT_DIR="${OUTPUT_DIR:-documentacion}"
 CSS_PDF_THEME="${CSS_PDF_THEME:-config/css/theme-pdf.css}"
 CSS_GDOCS_THEME="${CSS_GDOCS_THEME:-config/css/theme-gdocs.css}"
 
-# Determinar directorios a procesar (argumentos CLI o configuración)
-TARGET_DIRS=("$@")
+# Determinar argumentos y opciones
+TARGET_DIRS=()
+for arg in "$@"; do
+    case $arg in
+        --theme=*)
+            export COLOR_THEME="${arg#*=}"
+            ;;
+        -t=*)
+            export COLOR_THEME="${arg#*=}"
+            ;;
+        -t)
+            # El siguiente argumento será el tema si se usa espacio
+            ;;
+        *)
+            if [ "$PREV_ARG" = "-t" ]; then
+                export COLOR_THEME="$arg"
+                PREV_ARG=""
+            else
+                TARGET_DIRS+=("$arg")
+            fi
+            ;;
+    esac
+    PREV_ARG="$arg"
+done
+
 if [ ${#TARGET_DIRS[@]} -eq 0 ]; then
     read -r -a TARGET_DIRS <<< "$DEFAULT_INPUT_DIRS"
 fi

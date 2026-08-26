@@ -11,6 +11,7 @@ import os
 import json
 import sys
 import unicodedata
+from theme import get_current_theme, generate_css_variables
 
 def slugify(text: str) -> str:
     """
@@ -34,6 +35,7 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
         output_dir (str): Directorio donde se guardarán los resultados.
     """
     os.makedirs(output_dir, exist_ok=True)
+    theme = get_current_theme()
     
     # Buscar README y los demás capítulos (0*.md, 1*.md, etc.)
     files = []
@@ -51,6 +53,10 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
     out_file = os.path.join(output_dir, f'{doc_name}.md')
 
     with open(out_file, 'w', encoding='utf-8') as out:
+        # Inyectar variables CSS de tema
+        out.write(generate_css_variables())
+        out.write('\n\n')
+
         # --- Generar Portada ---
         main_title = doc_name.replace('-', ' ').title()
         subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
@@ -84,10 +90,10 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
 
         portada = f'''
 <div style="text-align: center; padding-top: 80px; padding-bottom: 80px;">
-  <p style="font-size: 14px; letter-spacing: 3px; font-weight: bold; color: #9D2449; text-transform: uppercase;">{pdf_top_header}</p>
+  <p style="font-size: 14px; letter-spacing: 3px; font-weight: bold; color: {theme['primary']}; text-transform: uppercase;">{pdf_top_header}</p>
   <h1 style="font-size: 34px; margin-top: 20px; margin-bottom: 10px; color: #333333;">{main_title}</h1>
   <h3 style="font-size: 18px; font-weight: 300; color: #666666;">{subtitle}</h3>
-  <div style="width: 80px; height: 4px; background-color: #9D2449; margin: 30px auto;"></div>
+  <div style="width: 80px; height: 4px; background-color: {theme['primary']}; margin: 30px auto;"></div>
   <p style="font-size: 13px; color: #888888;">Generado automáticamente · {fecha}</p>
 </div>
 
@@ -99,8 +105,8 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
         pdf_opts = {
             "pdf_options": {
                 "displayHeaderFooter": True,
-                "headerTemplate": f"<div style='font-size: 8px; width: 100%; padding: 0 40px; display: flex; justify-content: space-between; font-family: Inter, sans-serif; color: #9D2449; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; padding-bottom: 5px;'><span>{main_title}</span><span>{pdf_org_name}</span></div>",
-                "footerTemplate": f"<div style='font-size: 8px; width: 100%; text-align: center; font-family: Inter, sans-serif; color: #9D2449; font-weight: bold; text-transform: uppercase; border-top: 1px solid #e2e8f0; padding-top: 5px;'><span>{main_title} - {pdf_org_name} - PÁGINA <span class=\"pageNumber\"></span> DE <span class=\"totalPages\"></span></span></div>",
+                "headerTemplate": f"<div style='font-size: 8px; width: 100%; padding: 0 40px; display: flex; justify-content: space-between; font-family: Inter, sans-serif; color: {theme['primary']}; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; padding-bottom: 5px;'><span>{main_title}</span><span>{pdf_org_name}</span></div>",
+                "footerTemplate": f"<div style='font-size: 8px; width: 100%; text-align: center; font-family: Inter, sans-serif; color: {theme['primary']}; font-weight: bold; text-transform: uppercase; border-top: 1px solid #e2e8f0; padding-top: 5px;'><span>{main_title} - {pdf_org_name} - PÁGINA <span class=\"pageNumber\"></span> DE <span class=\"totalPages\"></span></span></div>",
                 "margin": { "top": "25mm", "bottom": "25mm", "left": "20mm", "right": "20mm" }
             }
         }
@@ -156,4 +162,5 @@ if __name__ == '__main__':
         print("Uso: python compiler.py <dir_path> <doc_name> <output_dir>")
         sys.exit(1)
     compile_markdown(sys.argv[1], sys.argv[2], sys.argv[3])
+
 

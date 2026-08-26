@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+:root {
+    --color-primary: #1E40AF;
+    --color-accent: #2563EB;
+    --color-bg-subtle: #EFF6FF;
+    --color-text-subtle: #1E3A8A;
+    --color-code: #1E40AF;
+    --color-link: #2563EB;
+}
+
 body {
     font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
     color: #333333;
@@ -9,7 +18,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    color: #9D2449;
+    color: var(--color-primary);
     font-weight: bold;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
@@ -43,16 +52,16 @@ th, td {
 }
 
 th {
-    background-color: #FDF4F6;
-    color: #9D2449;
+    background-color: var(--color-bg-subtle);
+    color: var(--color-primary);
     font-weight: bold;
     text-align: left;
-    border-bottom: 2px solid #9D2449;
+    border-bottom: 2px solid var(--color-primary);
 }
 
 /* Blockquotes (Alertas) - Sin bordes ni fondos para no romper GDocs */
 blockquote {
-    color: #5A122A;
+    color: var(--color-text-subtle);
     font-style: italic;
     font-weight: bold;
     margin: 1em 40px;
@@ -62,11 +71,11 @@ blockquote {
 code, pre {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 0.9em;
-    color: #475569;
+    color: var(--color-code);
 }
 
 a {
-    color: #9D2449;
+    color: var(--color-link);
     text-decoration: none;
 }
 
@@ -80,3 +89,4 @@ img, .mermaid svg, pre.mermaid svg, div.mermaid svg {
     display: block;
     object-fit: contain;
 }
+
