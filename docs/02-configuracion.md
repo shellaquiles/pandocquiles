@@ -33,6 +33,7 @@ cp .env.example .env
 | `PDF_PRODUCER` | Metadato del productor del documento PDF. | `"Generador de PDF"` |
 | `INPUT_DIRS` | Directorios por defecto a compilar si no se pasan argumentos por CLI. | `"docs"` |
 | `OUTPUT_DIR` | Directorio de destino para guardar los archivos `.pdf` y `.html`. | `"documentacion"` |
+| `OUTPUT_FORMATS` | Formatos de salida a generar (`"all"` para PDF+HTML+DOCX, o `"pdf"` para solo PDF). | `"all"` |
 | `CSS_PDF_THEME` | Ruta a la hoja de estilo CSS usada para el motor de generación PDF. | `"config/css/theme-pdf.css"` |
 | `CSS_GDOCS_THEME` | Ruta a la hoja de estilo CSS usada por Pandoc para el archivo HTML. | `"config/css/theme-gdocs.css"` |
 

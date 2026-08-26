@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# PanDocquiles v1.1.0 - Orquestador de Compilación
+# PanDocquiles v1.1.1 - Orquestador de Compilación
 # Script principal que coordina la generación de PDFs, HTMLs y DOCX a partir de MD.
 # ==============================================================================
 
@@ -12,7 +12,9 @@ cd "$(dirname "$0")/.."
 
 # Cargar variables de entorno si existe .env
 if [ -f ".env" ]; then
-  export $(cat ".env" | grep -v '^#' | xargs)
+  set -a
+  . ./.env
+  set +a
 fi
 
 # Variables de configuración por defecto
@@ -20,6 +22,10 @@ DEFAULT_INPUT_DIRS="${INPUT_DIRS:-docs}"
 OUTPUT_DIR="${OUTPUT_DIR:-documentacion}"
 CSS_PDF_THEME="${CSS_PDF_THEME:-config/css/theme-pdf.css}"
 CSS_GDOCS_THEME="${CSS_GDOCS_THEME:-config/css/theme-gdocs.css}"
+PDF_ONLY="${PDF_ONLY:-false}"
+if [ "${OUTPUT_FORMATS:-}" = "pdf" ]; then
+    PDF_ONLY=true
+fi
 
 # Determinar argumentos y opciones
 TARGET_DIRS=()
@@ -30,6 +36,9 @@ for arg in "$@"; do
             ;;
         -t=*)
             export COLOR_THEME="${arg#*=}"
+            ;;
+        --pdf-only|--pdf)
+            PDF_ONLY=true
             ;;
         -t)
             # El siguiente argumento será el tema si se usa espacio
@@ -62,8 +71,8 @@ for DIR in "${TARGET_DIRS[@]}"; do
         continue
     fi
 
-    # Validar que existan capítulos en el directorio
-    if ls "$DIR"/[0-9]*.md 1> /dev/null 2>&1 || [ -f "$DIR/README.md" ]; then
+    # Validar que existan archivos Markdown en el directorio
+    if ls "$DIR"/*.md 1> /dev/null 2>&1; then
         DOC_NAME="$(basename "$DIR")"
         if [ "$DOC_NAME" = "docs" ]; then
             DOC_NAME="pandocquiles"
@@ -81,31 +90,38 @@ for DIR in "${TARGET_DIRS[@]}"; do
         echo "🎨 Renderizando diagramas Mermaid..."
         npx -y @mermaid-js/mermaid-cli -i "$OUTPUT_DIR/$DOC_NAME.md" -o "$OUTPUT_DIR/TEMP_MERMAID.md" -e png -s 2 -b white
         
-        # 3. Preparar archivo PDF
+        # Mover las imágenes PNG generadas por mermaid al directorio de salida
+        mv TEMP_MERMAID-*.png "$OUTPUT_DIR/" 2>/dev/null || true
+        
+        # 3. Preparar archivo PDF con imágenes Base64 embebidas directamente
+        echo "🖼️ Incrustando recursos gráficos en el Markdown del PDF..."
         cp "$OUTPUT_DIR/TEMP_MERMAID.md" "$OUTPUT_DIR/TEMP_PDF.md"
+        python3 src/python/compiler.py --embed "$OUTPUT_DIR/TEMP_PDF.md" "$OUTPUT_DIR" "$DIR" .
         
-        # 4. Construir HTML (para Google Docs) con imágenes incrustadas en Base64
-        echo "🌐 Construyendo HTML con recursos embebidos..."
-        pandoc "$OUTPUT_DIR/TEMP_MERMAID.md" -o "$OUTPUT_DIR/$DOC_NAME.html" \
-            --self-contained \
-            --css="$CSS_GDOCS_THEME" \
-            --resource-path="$DIR:.:$OUTPUT_DIR"
-        
-        # Formatear el HTML generado para que las imágenes respeten anchos (Python)
-        echo "🪄 Aplicando correcciones visuales al HTML..."
-        python3 src/python/html_formatter.py "$OUTPUT_DIR/$DOC_NAME.html"
+        if [ "$PDF_ONLY" = false ]; then
+            # 4. Construir HTML (para Google Docs) con imágenes incrustadas en Base64
+            echo "🌐 Construyendo HTML con recursos embebidos..."
+            pandoc "$OUTPUT_DIR/TEMP_MERMAID.md" -o "$OUTPUT_DIR/$DOC_NAME.html" \
+                --self-contained \
+                --css="$CSS_GDOCS_THEME" \
+                --resource-path="$DIR:.:$OUTPUT_DIR"
+            
+            # Formatear el HTML generado para que las imágenes respeten anchos (Python)
+            echo "🪄 Aplicando correcciones visuales al HTML..."
+            python3 src/python/html_formatter.py "$OUTPUT_DIR/$DOC_NAME.html"
 
-        # 5. Construir documento Microsoft Word (.docx) a partir del HTML formateado
-        echo "📝 Compilando documento Word ($DOC_NAME.docx)..."
-        REF_DOC_OPTION=""
-        if [ -f "config/templates/referencia.docx" ]; then
-            REF_DOC_OPTION="--reference-doc=config/templates/referencia.docx"
-        elif [ -f "config/templates/referencia_modificada.docx" ]; then
-            REF_DOC_OPTION="--reference-doc=config/templates/referencia_modificada.docx"
+            # 5. Construir documento Microsoft Word (.docx) a partir del HTML formateado
+            echo "📝 Compilando documento Word ($DOC_NAME.docx)..."
+            REF_DOC_OPTION=""
+            if [ -f "config/templates/referencia.docx" ]; then
+                REF_DOC_OPTION="--reference-doc=config/templates/referencia.docx"
+            elif [ -f "config/templates/referencia_modificada.docx" ]; then
+                REF_DOC_OPTION="--reference-doc=config/templates/referencia_modificada.docx"
+            fi
+
+            pandoc "$OUTPUT_DIR/$DOC_NAME.html" -o "$OUTPUT_DIR/$DOC_NAME.docx" \
+                $REF_DOC_OPTION
         fi
-
-        pandoc "$OUTPUT_DIR/$DOC_NAME.html" -o "$OUTPUT_DIR/$DOC_NAME.docx" \
-            $REF_DOC_OPTION
 
         # 6. Construir PDF usando theme-pdf.css
         echo "📄 Compilando PDF final ($DOC_NAME.pdf)..."
@@ -133,7 +149,11 @@ for DIR in "${TARGET_DIRS[@]}"; do
         rm "$OUTPUT_DIR/pdf_config.json" 2>/dev/null || true
         rm "$OUTPUT_DIR/$DOC_NAME.md" 2>/dev/null || true
         
-        echo "✅ Completado: $OUTPUT_DIR/$DOC_NAME.html, $OUTPUT_DIR/$DOC_NAME.docx y $OUTPUT_DIR/$DOC_NAME.pdf"
+        if [ "$PDF_ONLY" = true ]; then
+            echo "✅ Completado: $OUTPUT_DIR/$DOC_NAME.pdf"
+        else
+            echo "✅ Completado: $OUTPUT_DIR/$DOC_NAME.html, $OUTPUT_DIR/$DOC_NAME.docx y $OUTPUT_DIR/$DOC_NAME.pdf"
+        fi
     else
         echo "⚠️ No se encontraron archivos Markdown (.md) en '$DIR'. Omitiendo..."
     fi

@@ -296,6 +296,36 @@ img {
     object-fit: contain;
 }
 
+/* Badges e Insignias Inline */
+img[src*="shields.io"],
+img[src*="badge"],
+p > a > img,
+a > img[src*="shields.io"] {
+    display: inline-block !important;
+    max-width: none !important;
+    max-height: 20px !important;
+    height: 18px !important;
+    width: auto !important;
+    margin: 1px 2px !important;
+    border: none !important;
+    border-radius: 3px !important;
+    box-shadow: none !important;
+    vertical-align: middle !important;
+}
+
+/* Contenedor de Badges */
+p:has(img[src*="shields.io"]),
+p:has(img[src*="badge"]),
+p:has(a > img[src*="shields.io"]) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 4px 6px !important;
+    margin-top: 4px !important;
+    margin-bottom: 10px !important;
+}
+
 p:has(img) {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
