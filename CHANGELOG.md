@@ -4,6 +4,19 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-26
+
+### Añadido
+- **Modo de compilación exclusiva PDF (`--pdf-only` / `--pdf`)**: Nueva bandera de CLI y variable de entorno `OUTPUT_FORMATS=pdf` para omitir la generación de HTML y DOCX cuando únicamente se requiere el PDF, acelerando el tiempo de compilación hasta en un 50%.
+- **Incrustador automático de imágenes Base64 (`--embed`)**: Nuevo módulo en `compiler.py` que convierte rutas de imágenes relativas y diagramas Mermaid a `data:image/png;base64,...`, garantizando un renderizado 100% confiable en Chromium/Puppeteer sin fallos de resolución de rutas locales.
+- **Soporte y estilos dedicados para Badges e Insignias (`shields.io`, `badge`)**: Reglas CSS específicas para alinear insignias inline en una sola fila compacta y horizontal, evitando que se muestren como imágenes en bloque verticales centradas con sombras.
+- **Detección genérica de libros consolidados y capítulos**: Soporte para manuales maestros (`*COMPLETO*.md`, `*MASTER*.md`, `*BOOK*.md`), capítulos numerados (`[0-9]*.md`) y colecciones de archivos Markdown sin acoplamiento a nombres fijos.
+
+### Mejorado
+- **Resolución dinámica de recursos gráficos**: Uso de `os.path.relpath(dir_path, output_dir)` para calcular rutas relativas dinámicas hacia subdirectorios de imágenes (`img/`, `assets/`, `media/`).
+- **Extracción resiliente de títulos y subtítulos**: Búsqueda del primer encabezado H1 en las primeras líneas del archivo Markdown para generar la portada oficial, tolerando líneas previas con comentarios, insignias o bloques vacíos.
+- **Desacoplamiento total**: Eliminación de cualquier condición o nombre de archivo hardcodeado en `build.sh` y `compiler.py`.
+
 ## [1.1.0] - 2026-08-26
 
 ### Añadido

@@ -11,6 +11,8 @@ import os
 import json
 import sys
 import unicodedata
+import base64
+import mimetypes
 from theme import get_current_theme, generate_css_variables
 
 def slugify(text: str) -> str:
@@ -37,14 +39,26 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     theme = get_current_theme()
     
-    # Buscar README y los demás capítulos (0*.md, 1*.md, etc.)
-    files = []
-    readme_path = os.path.join(dir_path, 'README.md')
-    if os.path.exists(readme_path):
-        files.append(readme_path)
-        
-    chapter_files = sorted(glob.glob(os.path.join(dir_path, '[0-9]*.md')))
-    files.extend(chapter_files)
+    # Estrategia genérica de detección de archivos Markdown:
+    # 1. Si existe un manual consolidado maestro (*_COMPLETO.md, *_MASTER.md, *_BOOK.md)
+    master_candidates = sorted(
+        glob.glob(os.path.join(dir_path, '*[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Oo]*.md')) +
+        glob.glob(os.path.join(dir_path, '*[Mm][Aa][Ss][Tt][Ee][Rr]*.md')) +
+        glob.glob(os.path.join(dir_path, '*[Bb][Oo][Oo][Kk]*.md'))
+    )
+    if master_candidates:
+        files = [master_candidates[0]]
+    else:
+        files = []
+        readme_path = os.path.join(dir_path, 'README.md')
+        if os.path.exists(readme_path):
+            files.append(readme_path)
+            
+        chapter_files = sorted(glob.glob(os.path.join(dir_path, '[0-9]*.md')))
+        if chapter_files:
+            files.extend(chapter_files)
+        elif not files:
+            files = sorted(glob.glob(os.path.join(dir_path, '*.md')))
     
     if not files:
         print(f"No se encontraron archivos Markdown en {dir_path}")
@@ -61,10 +75,10 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
         main_title = doc_name.replace('-', ' ').title()
         subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
         
-        # Intentar extraer el título real del README o frontmatter si existe
-        if files and 'README.md' in files[0]:
-            with open(files[0], 'r', encoding='utf-8') as readme:
-                content_first = readme.read()
+        # Intentar extraer el título real del primer archivo
+        if files:
+            with open(files[0], 'r', encoding='utf-8') as f_first:
+                content_first = f_first.read()
                 # Extraer título de YAML frontmatter si existe
                 m_title = re.search(r'^title:\s*\"([^\"]+)\"', content_first, re.MULTILINE)
                 m_sub = re.search(r'^subtitle:\s*\"([^\"]+)\"', content_first, re.MULTILINE)
@@ -74,15 +88,17 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
                         subtitle = m_sub.group(1).strip()
                 else:
                     lines = content_first.split('\n')
-                    if lines and lines[0].startswith('# '):
-                        raw_title = lines[0][2:].strip()
-                        if ' — ' in raw_title:
-                            main_title, subtitle = raw_title.split(' — ', 1)
-                        elif ' - ' in raw_title:
-                            main_title, subtitle = raw_title.split(' - ', 1)
-                        else:
-                            main_title = raw_title
-                            subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
+                    for l in lines:
+                        if l.startswith('# '):
+                            raw_title = l[2:].strip()
+                            if ' — ' in raw_title:
+                                main_title, subtitle = raw_title.split(' — ', 1)
+                            elif ' - ' in raw_title:
+                                main_title, subtitle = raw_title.split(' - ', 1)
+                            else:
+                                main_title = raw_title
+                                subtitle = os.environ.get('PDF_SUBTITLE', 'Documentación del Proyecto')
+                            break
 
         meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
         fecha = f'{meses[datetime.datetime.now().month - 1]} {datetime.datetime.now().year}'
@@ -124,8 +140,8 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
                 # Sanitizar YAML frontmatter inicial si existe en archivos o capítulos
                 content = re.sub(r'^---\s*\n.*?\n---\s*\n?', '', content, flags=re.DOTALL)
 
-                # Si es el README, quitar el H1 principal porque ya lo pusimos en la portada
-                if 'README.md' in file:
+                # Si es el README o Manual Maestro consolidado, quitar el H1 principal porque ya lo pusimos en la portada
+                if 'README.md' in file or (master_candidates and file in master_candidates):
                     content = re.sub(r'^# .*\n', '', content)
 
                 # Sustituir callouts estilo GitHub
@@ -144,20 +160,99 @@ def compile_markdown(dir_path: str, doc_name: str, output_dir: str):
                 content = re.sub(r'\[([^\]]+)\]\(\.\/[0-9]+-[^#)]+\.md\)', r'\1', content)
                 content = re.sub(r'\[([^\]]+)\]\(README\.md\)', r'\1', content)
                 
-                # Arreglar rutas de imágenes (ej. ./assets/... -> ../$DIR/assets/...)
-                content = re.sub(r'\]\(\./assets/', f'](../{dir_path}/assets/', content)
-                content = re.sub(r'\]\(assets/', f'](../{dir_path}/assets/', content)
-                content = re.sub(r'src="\./assets/', f'src="../{dir_path}/assets/', content)
-                content = re.sub(r'src="assets/', f'src="../{dir_path}/assets/', content)
+                # Calcular ruta relativa desde output_dir hacia dir_path para imágenes
+                rel_assets = os.path.relpath(os.path.abspath(dir_path), os.path.abspath(output_dir))
                 
-                # Arreglar cualquier otra imagen local (ej. image.png -> ../$DIR/image.png)
-                content = re.sub(r'\]\((?:\./)?(?!http|#|/|\.\.)([^)]+\.(?:png|jpg|jpeg|gif|svg|webp))\)', rf'](../{dir_path}/\1)', content)
-                content = re.sub(r'src="(?:\./)?(?!http|/|\.\.)([^"]+\.(?:png|jpg|jpeg|gif|svg|webp))"', rf'src="../{dir_path}/\1"', content)
+                # Arreglar cualquier imagen local (ej. img/test.png -> ../../documentacion/img/test.png)
+                content = re.sub(r'\]\((?:\./)?(?!http|#|/|\.\.)([^)]+\.(?:png|jpg|jpeg|gif|svg|webp))\)', rf']({rel_assets}/\1)', content)
+                content = re.sub(r'src="(?:\./)?(?!http|/|\.\.)([^"]+\.(?:png|jpg|jpeg|gif|svg|webp))"', rf'src="{rel_assets}/\1"', content)
                 
                 out.write(content.strip())
                 out.write('\n\n')
                 
+def embed_images_in_markdown(md_path: str, search_dirs: list):
+    """
+    Convierte todas las rutas de imágenes en un archivo Markdown a datos Base64
+    incrustados directamente (data:image/png;base64,...), garantizando que
+    md-to-pdf y los motores de PDF las rendericen sin fallos de rutas relativas.
+    """
+    if not os.path.exists(md_path):
+        return
+    with open(md_path, 'r', encoding='utf-8') as f:
+        text = f.read()
+
+    import mimetypes
+
+    def repl_md(match):
+        alt = match.group(1)
+        src = match.group(2).strip()
+        if src.startswith('data:') or src.startswith('http://') or src.startswith('https://'):
+            return match.group(0)
+
+        found_file = None
+        for sdir in search_dirs:
+            candidate = os.path.join(sdir, src)
+            if os.path.isfile(candidate):
+                found_file = candidate
+                break
+            clean_name = os.path.basename(src)
+            for root, _, files in os.walk(sdir):
+                if clean_name in files:
+                    found_file = os.path.join(root, clean_name)
+                    break
+            if found_file:
+                break
+
+        if found_file and os.path.exists(found_file):
+            mime, _ = mimetypes.guess_type(found_file)
+            if not mime:
+                mime = 'image/png'
+            with open(found_file, 'rb') as img_f:
+                b64 = base64.b64encode(img_f.read()).decode('ascii')
+            return f'![{alt}](data:{mime};base64,{b64})'
+        return match.group(0)
+
+    new_text = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', repl_md, text)
+
+    def repl_html(match):
+        prefix = match.group(1)
+        src = match.group(2).strip()
+        suffix = match.group(3)
+        if src.startswith('data:') or src.startswith('http://') or src.startswith('https://'):
+            return match.group(0)
+        found_file = None
+        for sdir in search_dirs:
+            candidate = os.path.join(sdir, src)
+            if os.path.isfile(candidate):
+                found_file = candidate
+                break
+            clean_name = os.path.basename(src)
+            for root, _, files in os.walk(sdir):
+                if clean_name in files:
+                    found_file = os.path.join(root, clean_name)
+                    break
+            if found_file:
+                break
+        if found_file and os.path.exists(found_file):
+            mime, _ = mimetypes.guess_type(found_file)
+            if not mime:
+                mime = 'image/png'
+            with open(found_file, 'rb') as img_f:
+                b64 = base64.b64encode(img_f.read()).decode('ascii')
+            return f'<img {prefix}src="data:{mime};base64,{b64}"{suffix}>'
+        return match.group(0)
+
+    new_text = re.sub(r'<img\s+([^>]*?)src="([^"]+)"([^>]*?)>', repl_html, new_text)
+
+    with open(md_path, 'w', encoding='utf-8') as f:
+        f.write(new_text)
+
+
 if __name__ == '__main__':
+    if len(sys.argv) > 2 and sys.argv[1] == '--embed':
+        embed_images_in_markdown(sys.argv[2], sys.argv[3:])
+        sys.exit(0)
+        
     if len(sys.argv) < 4:
         print("Uso: python compiler.py <dir_path> <doc_name> <output_dir>")
         sys.exit(1)

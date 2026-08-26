@@ -1,6 +1,6 @@
 # PanDocquiles 🌮📄
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg?style=flat-square)](./CHANGELOG.md) [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE) [![Python](https://img.shields.io/badge/python-3.8%2B-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Node](https://img.shields.io/badge/node-%3E%3D16-339933.svg?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/) [![Ecosystem](https://img.shields.io/badge/shellaquiles-ecosystem-9D2449.svg?style=flat-square)]()
+[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg?style=flat-square)](./CHANGELOG.md) [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE) [![Python](https://img.shields.io/badge/python-3.8%2B-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Node](https://img.shields.io/badge/node-%3E%3D16-339933.svg?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/) [![Ecosystem](https://img.shields.io/badge/shellaquiles-ecosystem-9D2449.svg?style=flat-square)]()
 
 PanDocquiles es una herramienta (de la familia de proyectos de Shellaquiles) creada con un propósito muy práctico: **convertir tu documentación escrita en Markdown a PDF e HTML/Docs, y subirla automáticamente a Google Drive.**
 
@@ -56,13 +56,19 @@ Por defecto, PanDocquiles compilará su propia documentación situada en `docs/`
 ./bin/build.sh
 ```
 
+O compila únicamente en formato **PDF** a máxima velocidad:
+
+```bash
+./bin/build.sh --pdf-only
+```
+
 O especifica la ruta de cualquier directorio de documentación personalizado:
 
 ```bash
-./bin/build.sh ruta/a/mi-documentacion
+./bin/build.sh --pdf-only ruta/a/mi-documentacion
 ```
 
-Los resultados finales se guardarán en el directorio `documentacion/` (`pandocquiles.pdf`, `pandocquiles.html` y `pandocquiles.docx`).
+Los resultados finales se guardarán en el directorio de salida configurado (por defecto `documentacion/` o `dist_docs/`).
 
 ---
 

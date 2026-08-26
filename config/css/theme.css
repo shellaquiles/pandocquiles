@@ -111,3 +111,30 @@ img, .mermaid svg, pre.mermaid svg, div.mermaid svg {
     margin: 20px auto;
     display: block;
 }
+
+/* Badges e Insignias Inline */
+img[src*="shields.io"],
+img[src*="badge"],
+p > a > img,
+a > img[src*="shields.io"] {
+    display: inline-block !important;
+    max-width: none !important;
+    max-height: 22px !important;
+    height: 20px !important;
+    width: auto !important;
+    margin: 2px 4px !important;
+    border: none !important;
+    box-shadow: none !important;
+    vertical-align: middle !important;
+}
+
+p:has(img[src*="shields.io"]),
+p:has(img[src*="badge"]),
+p:has(a > img[src*="shields.io"]) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 4px !important;
+    margin-bottom: 12px !important;
+}
